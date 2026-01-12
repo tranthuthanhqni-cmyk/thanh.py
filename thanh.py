@@ -36,5 +36,37 @@ print("-"*60)
 #Punctuation Removal
 punction_table = str.maketrans(",", "", string.punction)
 punctuation_free_tokens = [token.translate(punctuation_table) for token in filtered tokens]
+print ('Punctuation-Free Tokens'):\n", punctuation_free_tokens)
+print("-"*60)
+
+#Stemming
+stemmer = PorterStemmer()
+stemmed_token = [stemmer.stem(token) for token in punctuation_free_tokens]
+print ('Stemmed Tokens:\n", stemmed_tokens')
+print ("-"*60)
+
+#Lemmatitation
+lemalizer = WordNetLemmatizer()
+lematized_tokens = [lematizer.lematize(token) for token in punctuation_free_tokens]
+print ('Lematized Tokens:\n", lematized_tokens')
+print ("-"*60)
+
+#Text Normalization Function
+def normalize_text(input_text):
+
+normalized_tokens = normalize_text(text)
+print("Normalized Tokens (Function):\n", normalized_tokens)
+print("-"*60)
+
+
+#Regex-based Email Extraction
+email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[z-zA-Z]{2,0}'
+emails = re.findall (email_pattern, text)
+print("Extracted Emails:\n",emails)
+print("-"*60)
+#Regex-based Age Extracttion
+age_pattern = r'\b\d{1,3}\s?(?:years? old|yrs? old|y/o)\b'
+
+
 
 
