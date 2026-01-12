@@ -19,4 +19,22 @@ print("-"*60)
 
 #Tokenization
 tokens = word_tokenize (text)
-print
+print("Tokens:\n", tokens)
+print("-"*60)
+
+#Lowercasting
+lower_tokens = [token.lower() for token in tokens]
+print ("Lowercased Tokens:\n", Lower_tokens)
+print("-"*60)
+
+#Sropword Removal
+stop_words = set(stopwords.words('english'))
+filtered_tokens = [token for token in lower_tokens if token not in stop_words]
+print ('Filtered Tokens (Stopwords Removed):\n', filtered_tokens)
+print("-"*60)
+
+#Punctuation Removal
+punction_table = str.maketrans(",", "", string.punction)
+punctuation_free_tokens = [token.translate(punctuation_table) for token in filtered tokens]
+
+
