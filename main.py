@@ -1,61 +1,77 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+
+#Load dataset from CSV file
+data = pd.read_csv("omicron.csv")
+print(data.head())
+print(data.isnull().sum())
+
+#Import additions libraries for text preprocessing
 import nltk
-import stanza
 import re
-import string  
-# Download required NLTK resources (run once)
-nltk.download('punkt')
-nltk.download('punkt_tab')
 nltk.download('stopwords')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
-stanza.download('en')
-from nltk.tokenize import sent_tokenize, word_tokenize
+stemmer=nltk.SnowballStemmer("english")
 from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer, WordNetLemmatizer
+import string
+stopwords=set(stopwords.words('english'))
 
-#Initialize Stanza pipeline
-nlp = stanza.Pipeline(lang='en', processors='tokenize,pos,lemma')
-stop_words = set(stopwords.words('english'))
-stemmer = PorterStemmer()
-lemmatizer = WordNetLemmatizer()
+#Define a function to clean the text data
+def clean_text(text):
+    text = str(text).lower()
+    text = re.sub('\[.*?\]', '', text)
+    text = re.sub('https?://\S+|www\.\S+', '', text)
+    text = re.sub('<.*?>+', '', text)
+    text = re.sub('[%s]' % re.escape(string.punctuation), '', text)
+    text = re.sub('\n', '', text)
+    text = re.sub('\w*\d\w*', '', text)
+    text = [word for word in text.split(' ') if word not in stopwords]
+    text = " ".join(text)
+    text = [stemmer.stem(word) for word in text.split(' ')]
+    text = " ".join(text)
+    return text
 
-#Input text for analysis
-text = ("My name is Thanh. I'm 19 years old. I live in Hanoi. "
-"I love programming in Python! "
-"Natural Language Processing is fascinating.")
-#Print original text
-print("Original Text:\n",text)
-print("-"*60)
-#NLTK Sentence Segmentation
-nltk_sentences = sent_tokenize(text) #Split text into sentences
-print("NLTK Sentence Segmentation:")
-for i, sentence in enumerate(nltk_sentences,1): #Enumerate sentences with numbering
-    print(f"Sentence {i}: {sentence}")
-    print("-"*60)
-#NLTK Word Tokenization
-nltk_words = word_tokenize(text) #Split text into words/tokens
-print("NLTK Word Tokenization:")
-print (nltk_words)
-print("-"*60)
-#NLTK Normalization
-#Lowercasing all words
-lowercased_words = [word.lower() for word in nltk_words] #Convert all tokens  to lowercase
-print("Lowercased Words:")
-print(lowercased_words)
-print("."*60)
-#Removing punctuation
-punctuation_removed_words= [word for word in lowercased_words if word not in string.punctuation]  #Remove punctuation from tokens
-print("PUNCTUATION REMOVED WORDS.")                              
-print(punctuation_removed_words)
-print("-"*60)
-#Reconstruct normalized text
-normalized_textn=' '.join(punctuation_removed_words) #Join tokens back into a single string
-print("Normalized Text:\n", normalized_textn)
-print("-"*60)
-#Stanza POS Tagging
-doc = nlp(normalized_textn) #Run Stanza pipeline on normalized text
-print("Stanza POS Tagging:")
-for sentence in doc.sentences: #Iterate through sentences
-    for word in sentence.words: #Iterate through words 
-       print(f"Word: {word.text}\tPOS: {word.upos}") #Print word + POS tag
-print("-"*60)
+#Apply the cleaning function to the 'text' column in dataset
+data["text"] = data["text"].apply(clean_text)
+
+#Generate word cloud from cleanded text
+text= " ".join(i for i in data.text)
+stopwords = set(STOPWORDS)
+wordcloud=WordCloud(stopwords=stopwords,background_color="white").generate(text)
+plt.figure(figsize=(15,10))
+plt.imshow(wordcloud,interpolation='bilinear')
+plt.axis("off")
+plt.show()
+#perform sentiment analysis using VADER
+nltk.download('vader_lexicon')
+sia = SentimentIntensityAnalyzer()
+data['sentiments'] = data['text'].apply(lambda x: sia.polarity_scores(x))
+print(data[['cleaned_text', 'sentiment']].head())
+#Extract sentiment scores for each text entry
+data ["Positive"]= [sentimets.polarity_scores (i)["pos"] for i in data["text"]] # Postive score
+date ["Negative"]= [sentimets.polarity_scores (i)["neg"] for i in data["text"]] # Negative score
+data ["Neutral"]= [sentimets.polarity_scores (i)["neu"] for i in data["text"]] # Neutral score
+
+#Keep only relevant columns
+data = data[["text", "Positive", "Negative", "Neutral"]]
+print(data.head())
+results
+
+#Sum up sentiment scores across all text entries
+x = sum(data["Positive"])
+y = sum(data["Negative"])
+z = sum(data["Neutral"])
+
+#Define a function to determibe overall sentiment
+def sentiment_score(a,b,c):
+    if (a>b) and (a>c):
+        return "Positive"
+    elif (b>a) and (b>c):
+        return "Negative"
+    else:
+        return "Neutral"
+#Call function with aggregated sentiment Scores
+sentiment = sentiment_score(a,b,c)
+print(f"Overall sentiment: {sentiment_results}")
