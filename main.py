@@ -1,77 +1,53 @@
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
-
-#Load dataset from CSV file
-data = pd.read_csv("omicron.csv")
-print(data.head())
-print(data.isnull().sum())
-
-#Import additions libraries for text preprocessing
+# Import necessary libraries and packages
 import nltk
-import re
-nltk.download('stopwords')
-stemmer=nltk.SnowballStemmer("english")
-from nltk.corpus import stopwords
-import string
-stopwords=set(stopwords.words('english'))
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+#Download the Reuters dataset from NLTK and load it
+nltk.download('reuters')
+from nltk.corpus import reuters
 
-#Define a function to clean the text data
-def clean_text(text):
-    text = str(text).lower()
-    text = re.sub('\[.*?\]', '', text)
-    text = re.sub('https?://\S+|www\.\S+', '', text)
-    text = re.sub('<.*?>+', '', text)
-    text = re.sub('[%s]' % re.escape(string.punctuation), '', text)
-    text = re.sub('\n', '', text)
-    text = re.sub('\w*\d\w*', '', text)
-    text = [word for word in text.split(' ') if word not in stopwords]
-    text = " ".join(text)
-    text = [stemmer.stem(word) for word in text.split(' ')]
-    text = " ".join(text)
-    return text
+#Data preparation
+categories = ['grain', 'crude', 'trade']
+docs = [(reuters.raw(fileid), category)
+        for category in categories
+        for fileid in reuters.fileids(category)]
+texts, labels = zip(*docs)
+X_train, X_test, y_train, y_test = train_test_split(texts, labels, test_size=0.2, random_state=42)
+# Text Vectorization using TF-IDF
+tfidf_vectorizer = TfidfVectorizer(stop_words='english',
+                max_df=0.7)
 
-#Apply the cleaning function to the 'text' column in dataset
-data["text"] = data["text"].apply(clean_text)
+X_train_tf = tfidf_vectorizer.fit_transform(X_train)
+X_test_tf = tfidf_vectorizer.transform(X_test)
 
-#Generate word cloud from cleanded text
-text= " ".join(i for i in data.text)
-stopwords = set(STOPWORDS)
-wordcloud=WordCloud(stopwords=stopwords,background_color="white").generate(text)
-plt.figure(figsize=(15,10))
-plt.imshow(wordcloud,interpolation='bilinear')
-plt.axis("off")
-plt.show()
-#perform sentiment analysis using VADER
-nltk.download('vader_lexicon')
-sia = SentimentIntensityAnalyzer()
-data['sentiments'] = data['text'].apply(lambda x: sia.polarity_scores(x))
-print(data[['cleaned_text', 'sentiment']].head())
-#Extract sentiment scores for each text entry
-data ["Positive"]= [sentimets.polarity_scores (i)["pos"] for i in data["text"]] # Postive score
-date ["Negative"]= [sentimets.polarity_scores (i)["neg"] for i in data["text"]] # Negative score
-data ["Neutral"]= [sentimets.polarity_scores (i)["neu"] for i in data["text"]] # Neutral score
+# Model Training and Prediction
+classifier = MultinomialNB()
+classifier.fit(X_train_tf, y_train)
+y_pred = classifier.predict(X_test_tf)
 
-#Keep only relevant columns
-data = data[["text", "Positive", "Negative", "Neutral"]]
-print(data.head())
-results
+# Evaluation
+print("Classification Report:")
+print("===================================")
+print(classification_report(y_test, y_pred,
+                    labels=categories))
+print("\n")
 
-#Sum up sentiment scores across all text entries
-x = sum(data["Positive"])
-y = sum(data["Negative"])
-z = sum(data["Neutral"])
+# Visualization of Confusion Matrix 
+conf_matrix = confusion_matrix(y_test, y_pred, labels=categories)
+print("Confusion Matrix:")
+print("===================================")
+print(conf_matrix)
+print("\n")
 
-#Define a function to determibe overall sentiment
-def sentiment_score(a,b,c):
-    if (a>b) and (a>c):
-        return "Positive"
-    elif (b>a) and (b>c):
-        return "Negative"
-    else:
-        return "Neutral"
-#Call function with aggregated sentiment Scores
-sentiment = sentiment_score(a,b,c)
-print(f"Overall sentiment: {sentiment_results}")
+# Heatmap Visualization
+sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", xticklabels=categories,
+yticklabels=categories)
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title("Confusion Matrix Heatmap")
+plt.savefig('confusion_matrix.png')
+print("Confusion matrix heatmap saved as 'confusion_matrix.png'")
